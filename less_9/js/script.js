@@ -105,7 +105,7 @@ window.addEventListener('DOMContentLoaded', function() {
         document.body.style.overflow = '';
     });
 
-// Form
+    // Form
 
     let message = {
         loading: 'Загрузка...',
@@ -119,32 +119,150 @@ window.addEventListener('DOMContentLoaded', function() {
 
     statusMessage.classList.add('status');
 
-    form.addEventListener('submit', function(event) {
-        event.preventDefault();
-        form.appendChild(statusMessage);
+    function sendForm(elem) {
+        elem.addEventListener('submit', function(event) {
+            event.preventDefault();
 
-        let request = new XMLHttpRequest();
-        request.open('POST', 'server.php');
-        request.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+            elem.appendChild(statusMessage);
+            statusMessage.innerHTML = message.loading;
 
-        let formData = new FormData(form);
-        request.send(formData);
+            let formData = new FormData(elem);
 
-        request.addEventListener('readystatechange', function() {
-            if (request.readyState < 4) {
-                statusMessage.innerHTML = message.loading;
-            } else if (request.readyState ===4 && request.status == 200) {
-                statusMessage.innerHTML = message.success;
-            }   else {
-                statusMessage.innerHTML = message.failure;
+            function postData(data) {
+                return new Promise(function(resolve, reject) {
+                    let request = new XMLHttpRequest();
+                    request.open('POST', 'server.php');
+
+                    request.onload = function () {
+                        if (request.status >= 200 && request.status < 300) {
+                            resolve();
+                        } else {
+                            reject();
+                        }
+                    };
+
+                    request.onerror = () => reject();
+
+                    request.send(data);
+                });
+            }
+
+            function clearInput() {
+                for (let i = 0; i < input.length; i++) {
+                    input[i].value = '';
+                }
+            }
+
+            postData(formData)
+                .then(() => {
+                    statusMessage.innerHTML = message.success;
+                })
+                .catch(() => {
+                    statusMessage.innerHTML = message.failure;
+                })
+                .finally(clearInput);
+        });
+    }
+
+    sendForm(form);
+
+    // Slider
+
+    let slideIndex = 1,
+        slides = document.querySelectorAll('.slider-item'),
+        prev = document.querySelector('.prev'),
+        next = document.querySelector('.next'),
+        dotsWrap = document.querySelector('.slider-dots'),
+        dots = document.querySelectorAll('.dot');
+
+    showSlides(slideIndex);
+
+    function showSlides(n) {
+
+        if (n > slides.length) {
+            slideIndex = 1;
+        }
+        if (n <1) {
+            slideIndex = slides.length;
+        }
+
+        slides.forEach((item) => item.style.display = 'none');
+        dots.forEach((item) => item.classList.remove('dot-active'));
+        
+        slides[slideIndex - 1].style.display = 'block';
+        dots[slideIndex - 1].classList.add('dot-active');
+    }
+
+    function plusSlides(n) {
+        showSlides(slideIndex += n);
+
+
+    }
+
+    function currentSlide(n) {
+        showSlides(slideIndex = n);
+    }
+
+    prev.addEventListener('click', function() {
+        plusSlides(-1);
+    });
+
+    next.addEventListener('click', function() {
+        plusSlides(1);
+    });
+
+    dotsWrap.addEventListener('click', function(event) {
+        for (let i = 0; i < dots.length + 1; i++) {
+            if (event.target.classList.contains('dot') && event.target == dots[i - 1]) {
+                currentSlide(i);
+            }
+        }
+    });
+
+    //Calc
+
+    let persons = document.querySelectorAll('.counter-block-input')[0],
+        restDays = document.querySelectorAll('.counter-block-input')[1],
+        place = document.getElementById('select'),
+        totalValue = document.getElementById('total'),
+        personsSum = 0,
+        daysSum = 0,
+        total = 0;
+
+        totalValue.innerHTML = 0;
+
+        persons.addEventListener('input', function() {
+            personsSum = +this.value;
+            total = (daysSum + personsSum) * 4000;
+            if (restDays.value == '' || persons.value == '') {
+                totalValue.innerHTML = 0;
+            } else {
+                totalValue.innerHTML = total;
             }
         });
 
-        for (let i = 0; i < input.length; i++) {
-            input[i].value = '';
-        }
+        restDays.addEventListener('input', function() {
+            daysSum = +this.value;
+            total = (daysSum + personsSum) * 4000;
+            if (restDays.value == '' || persons.value == '') {
+                totalValue.innerHTML = 0;
+            } else {
+                totalValue.innerHTML = total;
+            }
+        });
 
-    });
+        place.addEventListener('change', function() {
+            if (restDays.value == '' || persons.value == '') {
+                totalValue.innerHTML = 0;
+            } else {
+                let a  = total;
+                totalValue.innerHTML = a * this.options[this.selectedIndex].value;
+            }
 
+
+        });
 
 });
+
+
+
